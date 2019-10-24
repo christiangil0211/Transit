@@ -54,7 +54,7 @@ namespace Transit.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("id,Document,FirstName,LastName,CellPhone")] Owner owner)
+        public async Task<IActionResult> Create([Bind("id")] Owner owner)
         {
             if (ModelState.IsValid)
             {
@@ -86,7 +86,7 @@ namespace Transit.Web.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("id,Document,FirstName,LastName,CellPhone")] Owner owner)
+        public async Task<IActionResult> Edit(int id, [Bind("id")] Owner owner)
         {
             if (id != owner.id)
             {

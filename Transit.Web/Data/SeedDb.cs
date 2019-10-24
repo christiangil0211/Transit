@@ -2,87 +2,110 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Transit.Web.Data.Entities;
+using Transit.Web.Helpers;
 using Transit.Web.Models.Data.Entities;
 
 namespace Transit.Web.Data
 {
     public class SeedDb
     {
-        private readonly DataContext _Context;
+        private readonly DataContext _context;
+        private readonly IUserHelper _userHelper;
 
-        public SeedDb(DataContext dataContext)
+        public SeedDb(DataContext dataContext,
+            IUserHelper userHelper)
         {
-            _Context = dataContext;
+            _context = dataContext;
+            _userHelper = userHelper;
         }
 
         public async Task SeedAsync()
         {
-            await _Context.Database.EnsureCreatedAsync();
-            await CheckOwnersAsync();
-            await CheckAgentsAsync();
+            await _context.Database.EnsureCreatedAsync();
+            await CheckRoles();
+            var manager = await CheckUserAsync("1010", "Christian", "Gil", "hiangil0211@gmail.com", "316 494 4151", "Manager");
+            var owner = await CheckUserAsync("2020", "Alexis", "Otalvaro", "cristhoper0211@hotmail.com", "316 879 1869", "Owner");
+            var agent = await CheckUserAsync("3030", "Andrea", "Marin", "auxit1@navisaf.com", "318 3687693", "Agent");
+            await CheckManagerAsync(manager);
+            await CheckOwnersAsync(owner);
+            await CheckAgentsAsync(agent);
             await CheckVehiclesAsync();
 
         }
 
-        private async Task CheckAgentsAsync()
+        private async Task<User> CheckUserAsync(string document, string firstName, string lastName, string email, string phone, string role)
         {
-            if (!_Context.Agents.Any())
+            var user = await _userHelper.GetUserByEmailAsync(email);
+
+            if (user == null)
             {
-                AddAgents("76767676", "Alexis", "Otalvaro", "244 5638");
-                AddAgents("34343434", "Diana", "Tobar", "327 9641");
-                AddAgents("57575577", "Luis", "Gil", "521 6809");
-                await _Context.SaveChangesAsync();
+                user = new User
+                {
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Email = email,
+                    UserName = email,
+                    PhoneNumber = phone,
+                    Document = document,
+                    
+                };
+
+                await _userHelper.AddUserAsync(user, "123456");
+                await _userHelper.AddUserToRoleAsync(user, role);
+            }
+
+            return user;
+        }
+
+        private async Task CheckRoles()
+        {
+            await _userHelper.CheckRoleAsync("Manager");
+            await _userHelper.CheckRoleAsync("Owner");
+            await _userHelper.CheckRoleAsync("Agent");
+        }
+
+        private async Task CheckManagerAsync(User user)
+        {
+            if (!_context.Managers.Any())
+            {
+                _context.Managers.Add(new Manager { User = user });
+                await _context.SaveChangesAsync();
             }
         }
 
-        private void AddAgents(string document, string firstName, string lastName, string cellPhone)
+        private async Task CheckAgentsAsync(User user)
         {
-            _Context.Agents.Add(new Agent
+            if (!_context.Agents.Any())
             {
-                Document = document,
-                FirstName = firstName,
-                LastName = lastName,
-                CellPhone = cellPhone
-            });
-        }
-
-        private async Task CheckOwnersAsync()
-        {
-            if (!_Context.Owners.Any())
-            {
-                AddOwner("89898989", "Christian", "Gil", "234 3232");
-                AddOwner("56565656", "Andrea", "Marin", "338 9748");
-                AddOwner("12121212", "Juan", "Zuluaga", "554 3899");
-                await _Context.SaveChangesAsync();
+                _context.Agents.Add(new Agent { User = user });
+                await _context.SaveChangesAsync();
             }
         }
 
-        private void AddOwner(string document, string firstName, string lastName, string cellPhone)
+        private async Task CheckOwnersAsync(User user)
         {
-            _Context.Owners.Add(new Owner
+            if (!_context.Owners.Any())
             {
-                Document = document,
-                FirstName = firstName,
-                LastName = lastName,
-                CellPhone = cellPhone
-            });
+                _context.Owners.Add(new Owner { User = user });
+                await _context.SaveChangesAsync();
+            }
         }
 
         private async Task CheckVehiclesAsync()
         {
-            var owner = _Context.Owners.FirstOrDefault();
+            var owner = _context.Owners.FirstOrDefault();
 
-            if (!_Context.Vehicles.Any())
+            if (!_context.Vehicles.Any())
             {
                 AddVehicle("WER-234", DateTime.Today, DateTime.Today.AddYears(1), DateTime.Today, DateTime.Today.AddYears(1),"Red","QWQDAS12W","AutoMovil",owner);
                 AddVehicle("WER-21F", DateTime.Today, DateTime.Today.AddYears(1), DateTime.Today, DateTime.Today.AddYears(1), "Blue", "AWEDBS35Z", "Motocicleta", owner);
-                await _Context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
             }
         }
 
         private void AddVehicle(string placa, DateTime dateSoatStar, DateTime dateSoatEnd, DateTime dateTecnoStar, DateTime dateTecnoEnd, string color, string vin, string typeVehicle, Owner owner)
         {
-            _Context.Vehicles.Add(new Vehicle
+            _context.Vehicles.Add(new Vehicle
             {
                 Placa = placa,
                 DateSoatStar = dateSoatStar,
